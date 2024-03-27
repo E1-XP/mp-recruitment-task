@@ -1,8 +1,8 @@
-import Table from "@/components/table";
+import Table from "@/components/Table";
 
 export default function Home() {
   return (
-    <main className="">
+    <main className="container mx-auto">
       <Table />
     </main>
   );
