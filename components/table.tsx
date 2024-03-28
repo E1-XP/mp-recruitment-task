@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { alpha } from "@mui/material/styles";
@@ -16,11 +16,11 @@ import TableSortLabel from "@mui/material/TableSortLabel";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
-import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
+import { visuallyHidden } from "@mui/utils";
 
 import { fetchData } from "@/helpers";
 import { API_URL } from "@/config";
@@ -30,6 +30,7 @@ interface Data {
   has_more: boolean;
   quota_max: number;
   quota_remaining: number;
+  total: number;
 }
 
 interface Item {
@@ -38,26 +39,90 @@ interface Item {
 }
 
 type Order = "asc" | "desc";
-type SortBy = "popular" | "name";
+type SortBy = "name" | "count";
 
 const initialData = {
   items: [],
   has_more: true,
   quota_max: 1,
   quota_remaining: 1,
+  total: 0,
 };
 
+interface THData {
+  label: string;
+  name: SortBy;
+}
+
+const headCells: THData[] = [
+  {
+    label: "Tag name",
+    name: "name",
+  },
+  {
+    label: "Number of posts",
+    name: "count",
+  },
+];
+
+interface THProps {
+  orderControl: [Order, (newState: Order) => void];
+  sortByControl: [SortBy, (newState: SortBy) => void];
+}
+
+function EnhancedTableHead({ orderControl, sortByControl }: THProps) {
+  const [order, setOrder] = orderControl;
+  const [sortBy, setSortBy] = sortByControl;
+
+  const createSortHandler = (name: SortBy) => {
+    return () => {
+      setOrder(order === "asc" ? "desc" : "asc");
+      setSortBy(name);
+    };
+  };
+
+  return (
+    <TableHead>
+      <TableRow>
+        {headCells.map((headCell, idx) => (
+          <TableCell
+            key={headCell.label}
+            align={idx ? "right" : "left"}
+            padding={"normal"}
+            sortDirection={order}
+          >
+            <TableSortLabel
+              active={sortBy === headCell.label}
+              direction={order}
+              onClick={createSortHandler(headCell.name)}
+            >
+              {headCell.label}
+            </TableSortLabel>
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+  );
+}
+
 const SortableTable = () => {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const [elementsPerPage, setElementsPerPage] = useState(10);
 
-  const queryStr = `?site=stackoverflow&pagesize=${elementsPerPage}&page=${page}&order=${"desc"}&sort=${"popular"}`;
+  const [order, setOrder] = useState<Order>("desc");
+  const [sortBy, setSortBy] = useState<SortBy>("count");
+
+  const mapSortNaming = (val: SortBy) => (val === "count" ? "popular" : val);
+
+  const queryStr = `?site=stackoverflow&pagesize=${elementsPerPage}&page=${
+    page + 1
+  }&order=${order}&sort=${mapSortNaming(sortBy)}&filter=!nNPvSNVZJS`;
   const getTags = (fetchData<Data>).bind(null, API_URL.concat("/tags", queryStr));
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["TAGS", elementsPerPage, page],
+  const { data, isLoading, isError, isPlaceholderData } = useQuery({
+    queryKey: ["TAGS", elementsPerPage, page, order],
     queryFn: getTags,
-    initialData,
+    placeholderData: keepPreviousData,
   });
 
   const handleChangePage = (
@@ -78,7 +143,7 @@ const SortableTable = () => {
 
   if (isLoading) return "Loading...";
 
-  if (isError) return "Error";
+  if (isError || !data) return "Error";
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -89,56 +154,38 @@ const SortableTable = () => {
             aria-labelledby="tableTitle"
             size={"medium"}
           >
-            {/* <EnhancedTableHead
-              numSelected={selected.length}
-              order={order}
-              orderBy={orderBy}
-              onSelectAllClick={handleSelectAllClick}
-              onRequestSort={handleRequestSort}
-              rowCount={rows.length}
-            /> */}
+            <EnhancedTableHead
+              orderControl={[order, setOrder]}
+              sortByControl={[sortBy, setSortBy]}
+            />
             <TableBody>
-              {data.items.map((row, index) => {
-                const labelId = `enhanced-table-checkbox-${index}`;
-
-                return (
-                  <TableRow
-                    hover
-                    tabIndex={-1}
-                    key={row.name}
-                    sx={{ cursor: "pointer" }}
-                  >
-                    <TableCell padding="checkbox"></TableCell>
-                    <TableCell
-                      component="th"
-                      id={labelId}
-                      scope="row"
-                      padding="none"
-                    >
-                      {row.name}
-                    </TableCell>
-                    <TableCell align="right">{row.count}</TableCell>
-                  </TableRow>
-                );
-              })}
-              {/* {emptyRows > 0 && (
+              {data.items.map((row, index) => (
                 <TableRow
-                  style={{
-                    height: (dense ? 33 : 53) * emptyRows,
-                  }}
+                  hover
+                  tabIndex={-1}
+                  key={row.name}
+                  sx={{ cursor: "pointer" }}
                 >
-                  <TableCell colSpan={6} />
+                  <TableCell
+                    component="th"
+                    id={row.name}
+                    scope="row"
+                    padding={"normal"}
+                  >
+                    {row.name}
+                  </TableCell>
+                  <TableCell align="right">{row.count}</TableCell>
                 </TableRow>
-              )} */}
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={10}
+          count={data.total}
           rowsPerPage={elementsPerPage}
-          page={page}
+          page={!data.total || data.total <= 0 ? 0 : page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
