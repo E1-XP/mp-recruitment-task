@@ -3,7 +3,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -13,17 +12,13 @@ import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Switch from "@mui/material/Switch";
-import { visuallyHidden } from "@mui/utils";
+import TextField from "@mui/material/TextField";
 
 import { fetchData } from "@/helpers";
 import { API_URL } from "@/config";
+
+const STACKEXCHANGE_API_KEY = "FIL*ON)IZjA92SgnFOsH)g((";
 
 interface Data {
   items: Item[];
@@ -40,14 +35,6 @@ interface Item {
 
 type Order = "asc" | "desc";
 type SortBy = "name" | "count";
-
-const initialData = {
-  items: [],
-  has_more: true,
-  quota_max: 1,
-  quota_remaining: 1,
-  total: 0,
-};
 
 interface THData {
   label: string;
@@ -68,9 +55,14 @@ const headCells: THData[] = [
 interface THProps {
   orderControl: [Order, (newState: Order) => void];
   sortByControl: [SortBy, (newState: SortBy) => void];
+  pageControl: [number, (newState: number) => void];
 }
 
-function EnhancedTableHead({ orderControl, sortByControl }: THProps) {
+function EnhancedTableHead({
+  orderControl,
+  sortByControl,
+  pageControl,
+}: THProps) {
   const [order, setOrder] = orderControl;
   const [sortBy, setSortBy] = sortByControl;
 
@@ -78,6 +70,7 @@ function EnhancedTableHead({ orderControl, sortByControl }: THProps) {
     return () => {
       setOrder(order === "asc" ? "desc" : "asc");
       setSortBy(name);
+      pageControl[1](0);
     };
   };
 
@@ -112,11 +105,16 @@ const SortableTable = () => {
   const [order, setOrder] = useState<Order>("desc");
   const [sortBy, setSortBy] = useState<SortBy>("count");
 
+  const content = { rowSelectorText : 'Select number of rows per page:'};
+
   const mapSortNaming = (val: SortBy) => (val === "count" ? "popular" : val);
 
   const queryStr = `?site=stackoverflow&pagesize=${elementsPerPage}&page=${
     page + 1
-  }&order=${order}&sort=${mapSortNaming(sortBy)}&filter=!nNPvSNVZJS`;
+  }&order=${order}&sort=${mapSortNaming(
+    sortBy
+  )}&filter=!nNPvSNVZJS&key=${STACKEXCHANGE_API_KEY}`;
+
   const getTags = (fetchData<Data>).bind(null, API_URL.concat("/tags", queryStr));
 
   const { data, isLoading, isError, isPlaceholderData } = useQuery({
@@ -143,7 +141,7 @@ const SortableTable = () => {
 
   if (isLoading) return "Loading...";
 
-  if (isError || !data) return "Error";
+  if (isError || !data || !data.items) return "Error";
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -157,15 +155,24 @@ const SortableTable = () => {
             <EnhancedTableHead
               orderControl={[order, setOrder]}
               sortByControl={[sortBy, setSortBy]}
+              pageControl={[page, setPage]}
             />
             <TableBody>
+              <TableRow tabIndex={-1} key={"numberOfRowsSelector"}>
+                <TableCell align="right">{ content.rowSelectorText}</TableCell>
+                <TableCell component="th" scope="row" padding={"normal"}>
+                  <TextField
+                    type="number"
+                    value={elementsPerPage}
+                    size="small"
+                    onChange={(ev) =>
+                      setElementsPerPage(parseInt(ev.target.value))
+                    }
+                  />
+                </TableCell>
+              </TableRow>
               {data.items.map((row, index) => (
-                <TableRow
-                  hover
-                  tabIndex={-1}
-                  key={row.name}
-                  sx={{ cursor: "pointer" }}
-                >
+                <TableRow hover tabIndex={-1} key={row.name}>
                   <TableCell
                     component="th"
                     id={row.name}
@@ -181,7 +188,7 @@ const SortableTable = () => {
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[0]}
           component="div"
           count={data.total}
           rowsPerPage={elementsPerPage}
