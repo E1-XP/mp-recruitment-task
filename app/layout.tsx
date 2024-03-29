@@ -5,7 +5,7 @@ import "./globals.css";
 
 import QueryProvider from "@/providers/query";
 
-const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"] });
+const roboto = Roboto({ subsets: ["latin"], weight: ["300", "400", "500", "700"] });
 
 export const metadata: Metadata = {
   title: "Create Next App",

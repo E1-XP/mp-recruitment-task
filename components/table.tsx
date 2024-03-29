@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import Box from "@mui/material/Box";
@@ -17,21 +17,8 @@ import TextField from "@mui/material/TextField";
 
 import { fetchData } from "@/helpers";
 import { API_URL } from "@/config";
-
-const STACKEXCHANGE_API_KEY = "FIL*ON)IZjA92SgnFOsH)g((";
-
-interface Data {
-  items: Item[];
-  has_more: boolean;
-  quota_max: number;
-  quota_remaining: number;
-  total: number;
-}
-
-interface Item {
-  name: string;
-  count: number;
-}
+import Loader from "./Loader";
+import { Data } from "@/modules/tags-explorer/interfaces";
 
 type Order = "asc" | "desc";
 type SortBy = "name" | "count";
@@ -58,11 +45,11 @@ interface THProps {
   pageControl: [number, (newState: number) => void];
 }
 
-function EnhancedTableHead({
+const EnhancedTableHead = ({
   orderControl,
   sortByControl,
   pageControl,
-}: THProps) {
+}: THProps) => {
   const [order, setOrder] = orderControl;
   const [sortBy, setSortBy] = sortByControl;
 
@@ -96,31 +83,31 @@ function EnhancedTableHead({
       </TableRow>
     </TableHead>
   );
-}
+};
 
-const SortableTable = () => {
+const SortableTable = ({ initialData }: { initialData: Data }) => {
   const [page, setPage] = useState(0);
   const [elementsPerPage, setElementsPerPage] = useState(10);
 
   const [order, setOrder] = useState<Order>("desc");
   const [sortBy, setSortBy] = useState<SortBy>("count");
 
-  const content = { rowSelectorText : 'Select number of rows per page:'};
+  const content = { rowSelectorText: "Select number of rows per page:" };
 
   const mapSortNaming = (val: SortBy) => (val === "count" ? "popular" : val);
 
   const queryStr = `?site=stackoverflow&pagesize=${elementsPerPage}&page=${
     page + 1
-  }&order=${order}&sort=${mapSortNaming(
-    sortBy
-  )}&filter=!nNPvSNVZJS&key=${STACKEXCHANGE_API_KEY}`;
+  }&order=${order}&sort=${mapSortNaming(sortBy)}&filter=!nNPvSNVZJS&key=${
+    process.env.NEXT_PUBLIC_STACKEXCHANGE_API_KEY
+  }`;
 
   const getTags = (fetchData<Data>).bind(null, API_URL.concat("/tags", queryStr));
 
-  const { data, isLoading, isError, isPlaceholderData } = useQuery({
+  const { data, isLoading, isFetching, isError, isPlaceholderData } = useQuery({
     queryKey: ["TAGS", elementsPerPage, page, order],
     queryFn: getTags,
-    placeholderData: keepPreviousData,
+    initialData,
   });
 
   const handleChangePage = (
@@ -137,21 +124,17 @@ const SortableTable = () => {
     setPage(0);
   };
 
-  console.log(data);
+  if (isLoading) return <Loader isLoading={true} />;
 
-  if (isLoading) return "Loading...";
-
-  if (isError || !data || !data.items) return "Error";
+  if (isError) {
+    return <Loader isLoading={false} isError={true} />;
+  }
 
   return (
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2 }}>
-        <TableContainer>
-          <Table
-            sx={{ minWidth: 750 }}
-            aria-labelledby="tableTitle"
-            size={"medium"}
-          >
+        <TableContainer className="relative">
+          <Table aria-labelledby="tableTitle" size={"medium"}>
             <EnhancedTableHead
               orderControl={[order, setOrder]}
               sortByControl={[sortBy, setSortBy]}
@@ -159,7 +142,7 @@ const SortableTable = () => {
             />
             <TableBody>
               <TableRow tabIndex={-1} key={"numberOfRowsSelector"}>
-                <TableCell align="right">{ content.rowSelectorText}</TableCell>
+                <TableCell align="right">{content.rowSelectorText}</TableCell>
                 <TableCell component="th" scope="row" padding={"normal"}>
                   <TextField
                     type="number"
@@ -186,6 +169,7 @@ const SortableTable = () => {
               ))}
             </TableBody>
           </Table>
+          <Loader isLoading={isFetching || isPlaceholderData} isError={isError} />
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[0]}
