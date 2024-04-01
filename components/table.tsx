@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { parseAsBoolean, parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import Box from "@mui/material/Box";
 import Table from "@mui/material/Table";
@@ -17,8 +18,9 @@ import TextField from "@mui/material/TextField";
 
 import { fetchData } from "@/helpers";
 import { API_URL } from "@/config";
-import Loader from "./Loader";
 import { Data } from "@/modules/tags-explorer/interfaces";
+
+import Loader from "./Loader";
 
 type Order = "asc" | "desc";
 type SortBy = "name" | "count";
@@ -27,6 +29,9 @@ interface THData {
   label: string;
   name: SortBy;
 }
+
+const OrderValues = ["asc", "desc"] as Order[];
+const SortByValues = ["name" , "count"] as SortBy[];
 
 const headCells: THData[] = [
   {
@@ -86,15 +91,18 @@ const EnhancedTableHead = ({
 };
 
 const SortableTable = ({ initialData }: { initialData: Data }) => {
-  const [page, setPage] = useState(0);
-  const [elementsPerPage, setElementsPerPage] = useState(10);
+  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(0));
+  const [elementsPerPage, setElementsPerPage] = useQueryState('perPage', parseAsInteger.withDefault(10));
 
-  const [order, setOrder] = useState<Order>("desc");
-  const [sortBy, setSortBy] = useState<SortBy>("count");
+  const [order, setOrder] = useQueryState<Order>('order',parseAsStringLiteral<Order>(OrderValues).withDefault("desc"));
+  const [sortBy, setSortBy] = useQueryState<SortBy>('sortBy',parseAsStringLiteral<SortBy>(SortByValues).withDefault("count"));
 
   const content = { rowSelectorText: "Select number of rows per page:" };
 
   const mapSortNaming = (val: SortBy) => (val === "count" ? "popular" : val);
+
+  const [isMounted, setIsMounted] = useQueryState('isMounted',parseAsBoolean.withDefault(false));
+  useEffect(() => { setIsMounted(true) }, []);
 
   const queryStr = `?site=stackoverflow&pagesize=${elementsPerPage}&page=${
     page + 1
@@ -107,7 +115,8 @@ const SortableTable = ({ initialData }: { initialData: Data }) => {
   const { data, isLoading, isFetching, isError, isPlaceholderData } = useQuery({
     queryKey: ["TAGS", elementsPerPage, page, order],
     queryFn: getTags,
-    initialData,
+    initialData: isMounted ? undefined : initialData,
+    placeholderData: keepPreviousData,
   });
 
   const handleChangePage = (
@@ -124,7 +133,17 @@ const SortableTable = ({ initialData }: { initialData: Data }) => {
     setPage(0);
   };
 
-  if (isLoading) return <Loader isLoading={true} />;
+  const onNumberInputChange = (
+    ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const regex = /^([1-9]|[1-9][0-9]|100)$/;
+
+    if (ev.target.value.match(regex)) {
+      setElementsPerPage(parseInt(ev.target.value));
+    }
+  };
+
+  if (isLoading|| !data) return <Loader isLoading={true} />;
 
   if (isError) {
     return <Loader isLoading={false} isError={true} />;
@@ -148,9 +167,7 @@ const SortableTable = ({ initialData }: { initialData: Data }) => {
                     type="number"
                     value={elementsPerPage}
                     size="small"
-                    onChange={(ev) =>
-                      setElementsPerPage(parseInt(ev.target.value))
-                    }
+                    onChange={onNumberInputChange}
                   />
                 </TableCell>
               </TableRow>
@@ -169,7 +186,10 @@ const SortableTable = ({ initialData }: { initialData: Data }) => {
               ))}
             </TableBody>
           </Table>
-          <Loader isLoading={isFetching || isPlaceholderData} isError={isError} />
+          <Loader
+            isLoading={isFetching || isPlaceholderData}
+            isError={isError}
+          />
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[0]}
