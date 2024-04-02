@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
 import { Roboto } from "next/font/google";
 
-import "./globals.css";
+import "./../styles/globals.css";
 
 import QueryProvider from "@/providers/query";
+import { ThemeProvider } from "@mui/material";
+import { MUITheme } from "@/styles/theme";
 
-const roboto = Roboto({ subsets: ["latin"], weight: ["300", "400", "500", "700"] });
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -20,7 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={roboto.className}>
-        <QueryProvider>{children}</QueryProvider>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <QueryProvider>
+            <ThemeProvider theme={MUITheme}>{children}</ThemeProvider>
+          </QueryProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

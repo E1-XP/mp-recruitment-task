@@ -1,4 +1,13 @@
 import type { Config } from "tailwindcss";
+import defaultColors from 'tailwindcss/colors';
+
+const colors = {
+  primary: "#1f344d",
+  secondary: "#60b4e5",
+} as const;
+
+export type Colors = typeof colors;
+export type DefaultColors = typeof defaultColors;
 
 const config: Config = {
   content: [
@@ -10,8 +19,11 @@ const config: Config = {
     preflight: false,
   },
   theme: {
-    extend: {},
+    extend: {
+      colors
+    },
   },
   plugins: [],
 };
+
 export default config;
