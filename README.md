@@ -33,7 +33,7 @@ How to run project locally:
   npm install
 ```
 
-4. Create env.local file and provide your api key:
+4. Create .env.local file and provide your api key:
 
 ```bash
    NEXT_PUBLIC_STACKEXCHANGE_API_KEY = YOUR_API_KEY_HERE
