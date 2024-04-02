@@ -3,12 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "ci" : "echo \"Error: no CI specified\" && exit 1",
+    "start": "next dev",
+    "storybook": "storybook dev -p 6006"
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
