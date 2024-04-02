@@ -16,9 +16,9 @@ import TableSortLabel from "@mui/material/TableSortLabel";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 
-import { fetchData } from "./../helpers";
-import { API_URL } from "./../config";
-import { Data } from "./../modules/tags-explorer/interfaces";
+import { fetchData } from "../helpers";
+import { API_URL } from "../config";
+import { Data } from "../modules/tags-explorer/interfaces";
 
 import Loader from "./Loader";
 
