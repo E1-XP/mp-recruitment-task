@@ -1,5 +1,6 @@
 import { twMerge } from "tailwind-merge";
 import Typography from "@mui/material/Typography";
+import { CircularProgress } from "@mui/material";
 
 interface Props {
   isLoading: boolean;
@@ -28,7 +29,7 @@ const Loader = ({ isLoading, isError }: Props) => {
         isLoading ? "opacity-40" : "opacity-0 pointer-events-none"
       )}
     >
-      <div className="loader" />
+      <CircularProgress />
     </div>
   );
 };

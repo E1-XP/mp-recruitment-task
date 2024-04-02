@@ -1,8 +1,8 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { parseAsBoolean, parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
+import { useEffect, useState } from "react";
+import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
 
 import Box from "@mui/material/Box";
 import Table from "@mui/material/Table";
@@ -16,19 +16,19 @@ import TableSortLabel from "@mui/material/TableSortLabel";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 
-import { fetchData } from "@/helpers";
-import { API_URL } from "@/config";
-import { Data } from "@/modules/tags-explorer/interfaces";
+import { fetchData } from "./../helpers";
+import { API_URL } from "./../config";
+import { Data } from "./../modules/tags-explorer/interfaces";
 
 import Loader from "./Loader";
-
-type Order = "asc" | "desc";
-type SortBy = "name" | "count";
 
 interface THData {
   label: string;
   name: SortBy;
 }
+
+type Order = "asc" | "desc";
+type SortBy = "name" | "count";
 
 const OrderValues = ["asc", "desc"] as Order[];
 const SortByValues = ["name" , "count"] as SortBy[];
@@ -80,6 +80,7 @@ const EnhancedTableHead = ({
               active={sortBy === headCell.label}
               direction={order}
               onClick={createSortHandler(headCell.name)}
+              className="font-bold"
             >
               {headCell.label}
             </TableSortLabel>
@@ -101,7 +102,7 @@ const SortableTable = ({ initialData }: { initialData: Data }) => {
 
   const mapSortNaming = (val: SortBy) => (val === "count" ? "popular" : val);
 
-  const [isMounted, setIsMounted] = useQueryState('isMounted',parseAsBoolean.withDefault(false));
+  const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true) }, []);
 
   const queryStr = `?site=stackoverflow&pagesize=${elementsPerPage}&page=${
@@ -153,7 +154,7 @@ const SortableTable = ({ initialData }: { initialData: Data }) => {
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2 }}>
         <TableContainer className="relative">
-          <Table aria-labelledby="tableTitle" size={"medium"}>
+          <Table aria-labelledby="Tags explorer" size={"medium"}>
             <EnhancedTableHead
               orderControl={[order, setOrder]}
               sortByControl={[sortBy, setSortBy]}
@@ -161,12 +162,11 @@ const SortableTable = ({ initialData }: { initialData: Data }) => {
             />
             <TableBody>
               <TableRow tabIndex={-1} key={"numberOfRowsSelector"}>
-                <TableCell align="right">{content.rowSelectorText}</TableCell>
-                <TableCell component="th" scope="row" padding={"normal"}>
+                <TableCell className="sm:text-right">{content.rowSelectorText}</TableCell>
+                <TableCell component="th" scope="row" padding={"normal"} className="text-right sm:text-left">
                   <TextField
                     type="number"
                     value={elementsPerPage}
-                    size="small"
                     onChange={onNumberInputChange}
                   />
                 </TableCell>

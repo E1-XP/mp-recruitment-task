@@ -3,7 +3,8 @@ import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import { theme } from "@/styles/theme";
+import { Container } from "@mui/material";
+import Link from "next/link";
 
 const Navbar = () => {
   const content = {
@@ -12,12 +13,16 @@ const Navbar = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-          <AppBar position="static" color='primary'>
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {content.titleText}
-          </Typography>
-        </Toolbar>
+      <AppBar position="static" color="primary">
+        <Container maxWidth="lg">
+          <Toolbar>
+            <Link href="/" className="text-decoration-none">
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                {content.titleText}
+              </Typography>
+            </Link>
+          </Toolbar>
+        </Container>
       </AppBar>
     </Box>
   );
